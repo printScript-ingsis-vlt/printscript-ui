@@ -1,0 +1,15 @@
+.git
+.github
+.idea
+.vscode
+node_modules
+dist
+coverage
+cypress
+cypress.config.ts
+cypress.config.js
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
