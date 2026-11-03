@@ -1,0 +1,36 @@
+name: CI, publish image and notify infrastructure
+
+on:
+  pull_request:
+    branches: [dev, prod]
+  push:
+    branches: [dev, prod]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  check:
+    uses: printScript-ingsis-vlt/common-configurations/.github/workflows/check.yml@main
+    with:
+      project_type: node
+
+  publish:
+    needs: check
+    if: github.event_name == 'push'
+    uses: printScript-ingsis-vlt/common-configurations/.github/workflows/publish.yml@main
+    with:
+      image_repository: ghcr.io/printscript-ingsis-vlt/printscript-ui
+      environment: ${{ github.ref_name }}
+
+  notify:
+    needs: publish
+    if: github.event_name == 'push'
+    uses: printScript-ingsis-vlt/common-configurations/.github/workflows/notify.yml@main
+    with:
+      service: printscript-ui
+      environment: ${{ github.ref_name }}
+      image: ${{ needs.publish.outputs.image }}
+    secrets:
+      INFRA_DISPATCH_TOKEN: ${{ secrets.INFRA_DISPATCH_TOKEN }}

@@ -10,5 +10,14 @@ export default defineConfig(({ mode }) => {
       'process.env.BACKEND_URL': JSON.stringify(env.BACKEND_URL)
     },
     plugins: [react()],
+    server: {
+      proxy: {
+        '/api': {
+          target: env.BACKEND_PROXY_TARGET || 'http://localhost:8080',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+      },
+    },
   }
 })
