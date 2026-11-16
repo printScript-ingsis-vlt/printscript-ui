@@ -11,13 +11,19 @@ import {
 import {useGetLintingRules, useModifyLintingRules} from "../../utils/queries.tsx";
 import {queryClient} from "../../App.tsx";
 import {Rule} from "../../types/Rule.ts";
+import {useSnackbarContext} from "../../contexts/snackbarContext.tsx";
 
 const LintingRulesList = () => {
   const [rules, setRules] = useState<Rule[] | undefined>([]);
+  const {createSnackbar} = useSnackbarContext()
 
   const {data, isLoading} = useGetLintingRules();
-  const {mutateAsync, isLoading: isLoadingMutate} = useModifyLintingRules({
-    onSuccess: () => queryClient.invalidateQueries('lintingRules')
+  const {mutate, isLoading: isLoadingMutate} = useModifyLintingRules({
+    onSuccess: () => {
+      queryClient.invalidateQueries('lintingRules')
+      queryClient.invalidateQueries('listSnippets')
+      createSnackbar('success', 'Linting started. Your snippets will update in the background.')
+    }
   })
 
   useEffect(() => {
@@ -88,7 +94,7 @@ const LintingRulesList = () => {
           )
         })}
       </List>
-      <Button disabled={isLoading} variant={"contained"} onClick={() => mutateAsync(rules ?? [])}>Save</Button>
+      <Button disabled={isLoading || isLoadingMutate} variant={"contained"} onClick={() => mutate(rules ?? [])}>Save</Button>
     </Card>
 
   );

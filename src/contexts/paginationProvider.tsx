@@ -12,6 +12,7 @@ export const PaginationProvider = ({children}: { children: ReactNode }) => {
 
   const handleChangePageSize = (pageSize: number) => {
     setPageSize(pageSize)
+    setPage(0)
   }
 
   const handleChangeCount = (newCount: number) => {

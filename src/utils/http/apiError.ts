@@ -28,6 +28,7 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
   UNAUTHENTICATED: SESSION_EXPIRED,
   ACCESS_DENIED: "You don't have permission to do this.",
   SNIPPET_NOT_FOUND: "This snippet doesn't exist or you don't have access to it.",
+  FORMATTED_VERSION_NOT_FOUND: "A formatted version is not available for this snippet yet.",
   USER_NOT_FOUND: "That user doesn't exist.",
   STORAGE_UNAVAILABLE: UNAVAILABLE,
   PERMISSIONS_UNAVAILABLE: UNAVAILABLE,
