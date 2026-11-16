@@ -2,28 +2,24 @@ import {useMutation, UseMutationResult, useQuery} from 'react-query';
 import {CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet} from './snippet.ts';
 import {SnippetOperations} from "./snippetOperations.ts";
 import {PaginatedUsers} from "./users.ts";
-import {FakeSnippetOperations} from "./mock/fakeSnippetOperations.ts";
 import {TestCase} from "../types/TestCase.ts";
 import {FileType} from "../types/FileType.ts";
 import {Rule} from "../types/Rule.ts";
-// import {useAuth0} from "@auth0/auth0-react";
-// import {useEffect} from "react";
+import {useAuth0} from "@auth0/auth0-react";
+import {useMemo} from "react";
+import {HttpSnippetOperations} from "./http/httpSnippetOperations.ts";
+import {describeError} from "./http/apiError.ts";
+import {useSnackbarContext} from "../contexts/snackbarContext.tsx";
 
 
 export const useSnippetsOperations = () => {
-  // const {getAccessTokenSilently} = useAuth0()
-  //
-  // useEffect(() => {
-  //     getAccessTokenSilently()
-  //         .then(token => {
-  //             console.log(token)
-  //         })
-  //         .catch(error => console.error(error));
-  // });
+  const {getAccessTokenSilently} = useAuth0()
 
-  const snippetOperations: SnippetOperations = new FakeSnippetOperations(/* getAccessTokenSilently */); // TODO: Replace with your implementation
-
-  return snippetOperations
+  // Una sola instancia por sesión: si no, cada render crearía un cliente nuevo.
+  return useMemo<SnippetOperations>(
+      () => new HttpSnippetOperations(() => getAccessTokenSilently()),
+      [getAccessTokenSilently]
+  )
 }
 
 export const useGetSnippets = (page: number = 0, pageSize: number = 10, snippetName?: string) => {
@@ -65,11 +61,19 @@ export const useGetUsers = (name: string = "", page: number = 0, pageSize: numbe
   return useQuery<PaginatedUsers, Error>(['users',name,page,pageSize], () => snippetOperations.getUserFriends(name,page, pageSize));
 };
 
+// Los errores de las acciones que no tienen un lugar propio en pantalla (borrar, compartir) salen en un snackbar.
+const useReportError = () => {
+  const {createSnackbar} = useSnackbarContext()
+  return (error: unknown) => createSnackbar("error", describeError(error).message)
+}
+
 export const useShareSnippet = () => {
   const snippetOperations = useSnippetsOperations()
+  const reportError = useReportError()
 
   return useMutation<Snippet, Error, { snippetId: string; userId: string }>(
-      ({snippetId, userId}) => snippetOperations.shareSnippet(snippetId, userId)
+      ({snippetId, userId}) => snippetOperations.shareSnippet(snippetId, userId),
+      {onError: reportError}
   );
 };
 
@@ -156,11 +160,13 @@ export const useFormatSnippet = () => {
 
 export const useDeleteSnippet = ({onSuccess}: {onSuccess: () => void}) => {
   const snippetOperations = useSnippetsOperations()
+  const reportError = useReportError()
 
   return useMutation<string, Error, string>(
       id => snippetOperations.deleteSnippet(id),
       {
         onSuccess,
+        onError: reportError,
       }
   );
 }

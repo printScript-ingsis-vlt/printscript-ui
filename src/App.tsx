@@ -4,7 +4,8 @@ import {createBrowserRouter} from "react-router-dom";
 import HomeScreen from "./screens/Home.tsx";
 import {QueryClient, QueryClientProvider} from "react-query";
 import RulesScreen from "./screens/Rules.tsx";
-// import {withAuthenticationRequired} from "@auth0/auth0-react";
+import {isClientError} from "./utils/http/apiError.ts";
+import {withAuthenticationRequired} from "@auth0/auth0-react";
 
 const router = createBrowserRouter([
     {
@@ -17,7 +18,14 @@ const router = createBrowserRouter([
     }
 ]);
 
-export const queryClient = new QueryClient()
+// Un 4xx (sin permiso, no existe) no se arregla reintentando; el resto se reintenta un par de veces.
+export const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            retry: (failureCount, error) => !isClientError(error) && failureCount < 2,
+        },
+    },
+})
 const App = () => {
     return (
         <QueryClientProvider client={queryClient}>
@@ -26,7 +34,4 @@ const App = () => {
     );
 }
 
-// To enable Auth0 integration change the following line
-export default App;
-// for this one:
-// export default withAuthenticationRequired(App);
+export default withAuthenticationRequired(App);
