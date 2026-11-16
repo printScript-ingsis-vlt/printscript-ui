@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  capitalize,
   IconButton,
   InputBase,
   FormControl,
