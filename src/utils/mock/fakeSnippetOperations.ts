@@ -36,7 +36,8 @@ export class FakeSnippetOperations implements SnippetOperations {
     })
   }
 
-  downloadSnippet(id: string, _version: SnippetContentVersion): Promise<string> {
+  downloadSnippet(id: string, version: SnippetContentVersion): Promise<string> {
+    void version
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         const snippet = this.fakeStore.getSnippetById(id)
@@ -46,7 +47,8 @@ export class FakeSnippetOperations implements SnippetOperations {
     })
   }
 
-  listSnippetDescriptors(page: number, pageSize: number, _filters: SnippetListFilters): Promise<PaginatedSnippets> {
+  listSnippetDescriptors(page: number, pageSize: number, filters: SnippetListFilters): Promise<PaginatedSnippets> {
+    void filters
     const response: PaginatedSnippets = {
       page: page,
       page_size: pageSize,
