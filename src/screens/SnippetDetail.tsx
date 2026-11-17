@@ -4,7 +4,7 @@ import {highlight, languages} from "prismjs";
 import "prismjs/components/prism-clike";
 import "prismjs/components/prism-javascript";
 import "prismjs/themes/prism-okaidia.css";
-import {Alert, Box, CircularProgress, IconButton, Menu, MenuItem, Tooltip, Typography} from "@mui/material";
+import {Box, CircularProgress, IconButton, Menu, MenuItem, Tooltip, Typography} from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 import {
   useUpdateSnippetById
@@ -108,12 +108,6 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
                   <Download/>
                 </IconButton>
               </Tooltip>
-              {/*<Tooltip title={runSnippet ? "Stop run" : "Run"}>*/}
-              {/*  <IconButton onClick={() => setRunSnippet(!runSnippet)}>*/}
-              {/*    {runSnippet ? <StopRounded/> : <PlayArrow/>}*/}
-              {/*  </IconButton>*/}
-              {/*</Tooltip>*/}
-              {/* TODO: we can implement a live mode*/}
               <Tooltip title={"Save changes"}>
                 <IconButton color={"primary"} onClick={() => updateSnippet({id: id, updateSnippet: {content: code}})} disabled={isUpdateSnippetLoading || !snippet || snippet.content === code} >
                   <Save />
@@ -143,8 +137,7 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
               </Bòx>
             </Box>
             <Box pt={1} flex={1} marginTop={2}>
-              <Alert severity="info">Output</Alert>
-              <SnippetExecution />
+              <SnippetExecution snippetId={id} hasUnsavedChanges={!!snippet && snippet.content !== code}/>
             </Box>
           </>
         }
