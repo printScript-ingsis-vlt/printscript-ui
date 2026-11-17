@@ -19,6 +19,7 @@ import {RulesHttpOperations} from "./rulesHttpOperations.ts";
 import {SnippetsHttpOperations} from "./snippetsHttpOperations.ts";
 import {UsersHttpOperations} from "./usersHttpOperations.ts";
 import {TestsHttpOperations} from "./testsHttpOperations.ts";
+import {AutomaticTestRun} from "../../types/AutomaticTestRun.ts";
 
 export class HttpSnippetOperations extends FakeSnippetOperations {
   private readonly snippets: SnippetsHttpOperations
@@ -81,6 +82,10 @@ export class HttpSnippetOperations extends FakeSnippetOperations {
 
   override runTestCase(snippetId: string, testId: string): Promise<TestRun> {
     return this.tests.run(snippetId, testId)
+  }
+
+  override getAutomaticTestRun(snippetId: string): Promise<AutomaticTestRun> {
+    return this.tests.automaticRun(snippetId)
   }
 
   override deleteSnippet(id: string): Promise<string> {

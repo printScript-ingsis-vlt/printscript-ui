@@ -13,6 +13,7 @@ import {
 import autoBind from 'auto-bind'
 import {PaginatedUsers} from "../users.ts";
 import {TestCase, TestCaseDraft, TestRun} from "../../types/TestCase.ts";
+import {AutomaticTestRun} from "../../types/AutomaticTestRun.ts";
 import {FileType} from "../../types/FileType.ts";
 import {Rule} from "../../types/Rule.ts";
 
@@ -127,6 +128,13 @@ export class FakeSnippetOperations implements SnippetOperations {
     void snippetId
     return new Promise(resolve => {
       setTimeout(() => resolve(this.fakeStore.removeTestCase(id)), DELAY)
+    })
+  }
+
+  getAutomaticTestRun(snippetId: string): Promise<AutomaticTestRun> {
+    void snippetId
+    return new Promise(resolve => {
+      setTimeout(() => resolve({status: null, generation: 0, results: [], error: null}), DELAY)
     })
   }
 

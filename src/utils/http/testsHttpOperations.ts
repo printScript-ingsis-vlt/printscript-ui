@@ -1,5 +1,6 @@
 import {AxiosInstance} from "axios";
 import {TestCase, TestCaseDraft, TestRun} from "../../types/TestCase.ts";
+import {AutomaticTestRun} from "../../types/AutomaticTestRun.ts";
 
 export class TestsHttpOperations {
   constructor(private readonly http: AxiosInstance) {}
@@ -26,6 +27,12 @@ export class TestsHttpOperations {
 
   async run(snippetId: string, testId: string): Promise<TestRun> {
     const {data} = await this.http.post<TestRun>(`${this.basePath(snippetId)}/${encodeURIComponent(testId)}/run`)
+    return data
+  }
+
+  /** US #16: resultado de la última corrida automática (la que dispara cada guardado del snippet). */
+  async automaticRun(snippetId: string): Promise<AutomaticTestRun> {
+    const {data} = await this.http.get<AutomaticTestRun>(`${this.basePath(snippetId)}/automatic-run`)
     return data
   }
 

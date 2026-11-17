@@ -9,7 +9,14 @@ import CloseIcon from '@mui/icons-material/Close';
 import {
   useUpdateSnippetById
 } from "../utils/queries.tsx";
-import {useDownloadSnippet, useGetSnippetById, useShareSnippet, useUpdateSnippetFromFile} from "../utils/queries.tsx";
+import {
+  automaticTestRunKey,
+  useDownloadSnippet,
+  useGetSnippetById,
+  useShareSnippet,
+  useUpdateSnippetFromFile
+} from "../utils/queries.tsx";
+import {AutomaticTestRunPanel} from "../components/snippet-test/AutomaticTestRunPanel.tsx";
 import {Bòx} from "../components/snippet-table/SnippetBox.tsx";
 import {BugReport, Delete, Download, Save, Share, UploadFile} from "@mui/icons-material";
 import {ShareSnippetModal} from "../components/snippet-detail/ShareSnippetModal.tsx";
@@ -43,18 +50,18 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
   const {data: snippet, isLoading, isError, error: loadError, refetch} = useGetSnippetById(id);
   const {mutate: shareSnippet, isLoading: loadingShare} = useShareSnippet()
   const {mutate: downloadSnippet, isLoading: isDownloading} = useDownloadSnippet()
+  // El listado también cambia al guardar (por ejemplo vuelve a "pending"), y cada guardado
+  // dispara la corrida automática de los tests (US #16): se vuelve a consultar para empezar a seguirla.
+  const refreshAfterSave = async () => {
+    await queryClient.invalidateQueries(['snippet', id])
+    await queryClient.invalidateQueries('listSnippets')
+    await queryClient.invalidateQueries(automaticTestRunKey(id))
+  }
   const {mutate: updateSnippet, isLoading: isUpdateSnippetLoading, error: updateError} = useUpdateSnippetById({
-    onSuccess: async () => {
-      // El listado también cambia al guardar (por ejemplo vuelve a "pending").
-      await queryClient.invalidateQueries(['snippet', id])
-      await queryClient.invalidateQueries('listSnippets')
-    }
+    onSuccess: refreshAfterSave
   })
   const {mutate: updateSnippetFromFile, isLoading: isUpdateFileLoading, error: updateFileError} = useUpdateSnippetFromFile({
-    onSuccess: async () => {
-      await queryClient.invalidateQueries(['snippet', id])
-      await queryClient.invalidateQueries('listSnippets')
-    }
+    onSuccess: refreshAfterSave
   })
 
   useEffect(() => {
@@ -195,6 +202,10 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
                     }}
                 />
               </Bòx>
+            </Box>
+            <Box marginTop={2}>
+              <AutomaticTestRunPanel snippetId={id} hasUnsavedChanges={hasChanges}
+                                     onManageTests={() => setTestModalOpened(true)}/>
             </Box>
             <Box pt={1} flex={1} marginTop={2}>
               <SnippetExecution snippetId={id} hasUnsavedChanges={hasChanges}/>
