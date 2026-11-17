@@ -12,6 +12,8 @@ import {
 import {SnippetOperations} from "./snippetOperations.ts";
 import {PaginatedUsers} from "./users.ts";
 import {TestCase, TestCaseDraft, TestRun} from "../types/TestCase.ts";
+import {AutomaticTestRun, automaticRunRefetchInterval} from "../types/AutomaticTestRun.ts";
+import {isAxiosError} from "axios";
 import {FileType} from "../types/FileType.ts";
 import {Rule} from "../types/Rule.ts";
 import {useAuth0} from "@auth0/auth0-react";
@@ -164,6 +166,33 @@ export const useRemoveTestCase = (snippetId: string) => {
   return useMutation<string, Error, string>(
       testId => snippetOperations.removeTestCase(snippetId, testId),
       {onSuccess: () => queryClient.invalidateQueries(['testCases', snippetId])},
+  )
+}
+
+export const automaticTestRunKey = (snippetId: string) => ['automaticTestRun', snippetId]
+
+/**
+ * US #16: estado de la última corrida automática de tests del snippet.
+ * Refresca cada pocos segundos mientras la corrida está en curso y se detiene al terminar.
+ * Devuelve null si el backend todavía no expone el endpoint (404), para no mostrar un error por algo que no existe.
+ */
+export const useGetAutomaticTestRun = (snippetId: string) => {
+  const snippetOperations = useSnippetsOperations()
+
+  return useQuery<AutomaticTestRun | null, Error>(
+      automaticTestRunKey(snippetId),
+      async () => {
+        try {
+          return await snippetOperations.getAutomaticTestRun(snippetId)
+        } catch (error) {
+          if (isAxiosError(error) && error.response?.status === 404) return null
+          throw error
+        }
+      },
+      {
+        enabled: !!snippetId,
+        refetchInterval: automaticRunRefetchInterval,
+      },
   )
 }
 

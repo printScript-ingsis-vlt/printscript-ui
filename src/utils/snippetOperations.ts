@@ -10,6 +10,7 @@ import {
 } from './snippet'
 import {PaginatedUsers} from "./users.ts";
 import {TestCase, TestCaseDraft, TestRun} from "../types/TestCase.ts";
+import {AutomaticTestRun} from "../types/AutomaticTestRun.ts";
 import {FileType} from "../types/FileType.ts";
 import {Rule} from "../types/Rule.ts";
 
@@ -45,6 +46,8 @@ export interface SnippetOperations {
   removeTestCase(snippetId: string, testId: string): Promise<string>
 
   runTestCase(snippetId: string, testId: string): Promise<TestRun>
+
+  getAutomaticTestRun(snippetId: string): Promise<AutomaticTestRun>
 
   deleteSnippet(id: string): Promise<string>
 
