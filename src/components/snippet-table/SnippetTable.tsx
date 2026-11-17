@@ -73,8 +73,11 @@ export const SnippetTable = (props: SnippetTableProps) => {
     file.text().then((text) => {
       setSnippet({
         name: splitName[0],
+        description: "",
         content: text,
         language: fileType.language,
+        version: "",
+        file,
         extension: fileType.extension
       })
     }).catch(e => {
@@ -207,9 +210,15 @@ export const SnippetTable = (props: SnippetTableProps) => {
                            onRowsPerPageChange={e => handleChangePageSize(Number(e.target.value))}/>
         </Table>
         <AddSnippetModal defaultSnippet={snippet} open={addModalOpened}
-                         onClose={() => setAddModalOpened(false)}/>
+                         onClose={() => {
+                           setAddModalOpened(false)
+                           setSnippet(undefined)
+                         }}/>
         <Menu anchorEl={popoverRef.current} open={popoverMenuOpened} onClick={handleClickMenu}>
-          <MenuItem onClick={() => setAddModalOpened(true)}>Create snippet</MenuItem>
+          <MenuItem onClick={() => {
+            setSnippet(undefined)
+            setAddModalOpened(true)
+          }}>Create snippet</MenuItem>
           <MenuItem onClick={() => inputRef?.current?.click()}>Load snippet from file</MenuItem>
         </Menu>
         <input hidden type={"file"} ref={inputRef} multiple={false} data-testid={"upload-file-input"}

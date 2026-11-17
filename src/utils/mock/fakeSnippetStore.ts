@@ -2,7 +2,6 @@ import {ComplianceEnum, CreateSnippet, Snippet, UpdateSnippet} from '../snippet'
 import {v4 as uuid} from 'uuid'
 import {PaginatedUsers} from "../users.ts";
 import {TestCase} from "../../types/TestCase.ts";
-import {TestCaseResult} from "../queries.tsx";
 import {FileType} from "../../types/FileType.ts";
 import {Rule} from "../../types/Rule.ts";
 
@@ -14,6 +13,8 @@ const INITIAL_SNIPPETS: Snippet[] = [
     compliance: 'pending',
     author: 'John Doe',
     language: 'printscript',
+    description: '',
+    version: '1.1',
     extension: 'prs'
   },
   {
@@ -23,6 +24,8 @@ const INITIAL_SNIPPETS: Snippet[] = [
     compliance: 'not-compliant',
     author: 'John Doe',
     language: 'printscript',
+    description: '',
+    version: '1.1',
     extension: 'prs'
   },
   {
@@ -32,6 +35,8 @@ const INITIAL_SNIPPETS: Snippet[] = [
     compliance: 'compliant',
     author: 'John Doe',
     language: 'printscript',
+    description: '',
+    version: '1.1',
     extension: 'prs'
   }
 ]
@@ -247,10 +252,6 @@ export class FakeSnippetStore {
   deleteSnippet(id: string): string {
     this.snippetMap.delete(id)
     return id
-  }
-
-  testSnippet(): TestCaseResult {
-    return Math.random() > 0.5 ? "success" : "fail"
   }
 
   getFileTypes(): FileType[] {

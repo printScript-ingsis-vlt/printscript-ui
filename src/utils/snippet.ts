@@ -7,6 +7,15 @@ export type ComplianceEnum =
     'not-compliant' |
     'compliant'
 
+// lo que devuelve una regla de linting incumplida
+export type LintIssue = {
+  rule: string;
+  severity: string;
+  message: string;
+  line: number;
+  column: number;
+}
+
 export type SnippetRelation = 'owned' | 'shared' | 'all'
 export type SnippetSortField = 'name' | 'language' | 'compliance'
 export type SnippetSortOrder = 'asc' | 'desc'
@@ -30,16 +39,28 @@ export const defaultSnippetListFilters: SnippetListFilters = {
 
 export type CreateSnippet = {
   name: string;
+  description: string;
   content: string;
   language: string;
+  version?: string;
   extension: string;
 }
 
-export type CreateSnippetWithLang = CreateSnippet & { language: string }
+/** Datos precargados en el modal de alta, opcionalmente desde un archivo local. */
+export type CreateSnippetWithLang = CreateSnippet & { file?: File }
+
+/** El backend recibe archivos por multipart, separado del flujo JSON del editor. */
+export type CreateSnippetFromFile = Omit<CreateSnippet, "content"> & { file: File }
 
 export type UpdateSnippet = {
-  content: string
+  name?: string
+  description?: string
+  language?: string
+  version?: string
+  content?: string
 }
+
+export type UpdateSnippetFromFile = Omit<UpdateSnippet, "content"> & { file: File }
 
 export type Snippet = CreateSnippet & {
   id: string
@@ -48,6 +69,7 @@ export type Snippet = CreateSnippet & {
 type SnippetStatus = {
   compliance: ComplianceEnum;
   author: string;
+  lintIssues?: LintIssue[];
 }
 export type PaginatedSnippets = Pagination & {
   snippets: Snippet[]
