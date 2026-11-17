@@ -28,7 +28,8 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
   UNAUTHENTICATED: SESSION_EXPIRED,
   ACCESS_DENIED: "You don't have permission to do this.",
   SNIPPET_NOT_FOUND: "This snippet doesn't exist or you don't have access to it.",
-  FORMATTED_VERSION_NOT_FOUND: "A formatted version is not available for this snippet yet.",
+  // Se formatea solo al crear o editar: hasta que llega el resultado del engine no hay versión formateada.
+  FORMATTED_VERSION_NOT_FOUND: "This snippet is still being formatted. Try again in a few seconds.",
   USER_NOT_FOUND: "That user doesn't exist.",
   STORAGE_UNAVAILABLE: UNAVAILABLE,
   PERMISSIONS_UNAVAILABLE: UNAVAILABLE,
@@ -38,12 +39,24 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
 // Errores del SDK de Auth0 cuando no puede renovar el token.
 const AUTH0_SESSION_ERRORS = ["login_required", "consent_required", "missing_refresh_token"]
 
+// Los pedidos con responseType 'text' (la descarga) reciben el cuerpo del error como string, no como objeto.
+function parseBody(data: unknown): ErrorBody | undefined {
+  if (typeof data !== "string") return data as ErrorBody | undefined
+  try {
+    const parsed: unknown = JSON.parse(data)
+    return typeof parsed === "object" && parsed !== null ? parsed as ErrorBody : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export function describeError(error: unknown): ApiErrorInfo {
   if (isAxiosError<ErrorBody>(error)) {
     if (!error.response) {
       return {message: "Could not reach the server. Check your connection and try again.", validationErrors: []}
     }
-    const {status, data} = error.response
+    const {status} = error.response
+    const data = parseBody(error.response.data)
     const code = data?.error
     const friendly = code ? FRIENDLY_MESSAGES[code] : undefined
     return {
