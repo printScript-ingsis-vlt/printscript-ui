@@ -180,6 +180,16 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
                 <TextField label="Version" value={version} onChange={event => setVersion(event.target.value)} size="small" fullWidth/>
               </Box>
             </Box>
+            {!!snippet?.lintIssues?.length && (
+              <Box pb={2}>
+                <Typography fontWeight="bold">Lint issues</Typography>
+                {snippet.lintIssues.map(issue => (
+                  <Typography key={`${issue.rule}-${issue.line}-${issue.column}`} variant="body2">
+                    [{issue.severity}] {issue.rule} — {issue.message} (line {issue.line}, column {issue.column})
+                  </Typography>
+                ))}
+              </Box>
+            )}
             <Box display={"flex"} gap={2}>
               <Bòx flex={1} height={"fit-content"} overflow={"none"} minHeight={"500px"} bgcolor={'black'} color={'white'} code={code}>
                 <Editor

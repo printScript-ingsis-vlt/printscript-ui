@@ -7,6 +7,15 @@ export type ComplianceEnum =
     'not-compliant' |
     'compliant'
 
+// lo que devuelve una regla de linting incumplida
+export type LintIssue = {
+  rule: string;
+  severity: string;
+  message: string;
+  line: number;
+  column: number;
+}
+
 export type SnippetRelation = 'owned' | 'shared' | 'all'
 export type SnippetSortField = 'name' | 'language' | 'compliance'
 export type SnippetSortOrder = 'asc' | 'desc'
@@ -60,6 +69,7 @@ export type Snippet = CreateSnippet & {
 type SnippetStatus = {
   compliance: ComplianceEnum;
   author: string;
+  lintIssues?: LintIssue[];
 }
 export type PaginatedSnippets = Pagination & {
   snippets: Snippet[]
