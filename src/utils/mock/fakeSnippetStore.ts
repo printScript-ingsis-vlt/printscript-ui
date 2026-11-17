@@ -228,10 +228,6 @@ export class FakeSnippetStore {
     return this.lintingRules
   }
 
-  formatSnippet(snippetContent: string): string {
-    return `//Mocked format of snippet :) \n${snippetContent}`
-  }
-
   getTestCases(): TestCase[] {
     return Array.from(this.testCaseMap, ([, value]) => value)
   }

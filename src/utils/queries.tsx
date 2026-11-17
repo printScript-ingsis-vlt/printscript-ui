@@ -1,5 +1,12 @@
 import {useMutation, UseMutationResult, useQuery} from 'react-query';
-import {CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet} from './snippet.ts';
+import {
+  CreateSnippet,
+  PaginatedSnippets,
+  Snippet,
+  SnippetContentVersion,
+  SnippetListFilters,
+  UpdateSnippet
+} from './snippet.ts';
 import {SnippetOperations} from "./snippetOperations.ts";
 import {PaginatedUsers} from "./users.ts";
 import {TestCase} from "../types/TestCase.ts";
@@ -22,10 +29,17 @@ export const useSnippetsOperations = () => {
   )
 }
 
-export const useGetSnippets = (page: number = 0, pageSize: number = 10, snippetName?: string) => {
+export const useGetSnippets = (page: number = 0, pageSize: number = 10, filters: SnippetListFilters) => {
   const snippetOperations = useSnippetsOperations()
 
-  return useQuery<PaginatedSnippets, Error>(['listSnippets', page,pageSize,snippetName], () => snippetOperations.listSnippetDescriptors(page, pageSize,snippetName));
+  return useQuery<PaginatedSnippets, Error>(
+      ['listSnippets', page, pageSize, filters],
+      () => snippetOperations.listSnippetDescriptors(page, pageSize, filters),
+      {
+        // Los resultados de lint llegan por Redis; sólo refrescamos mientras la página visible tenga pendientes.
+        refetchInterval: data => data?.snippets.some(snippet => snippet.compliance === 'pending') ? 5000 : false,
+      },
+  );
 };
 
 export const useGetSnippetById = (id: string) => {
@@ -35,6 +49,16 @@ export const useGetSnippetById = (id: string) => {
     enabled: !!id, // This query will not execute until the id is provided
   });
 };
+
+export const useDownloadSnippet = () => {
+  const snippetOperations = useSnippetsOperations()
+  const reportError = useReportError()
+
+  return useMutation<string, Error, { id: string, version: SnippetContentVersion }>(
+      ({id, version}) => snippetOperations.downloadSnippet(id, version),
+      {onError: reportError},
+  )
+}
 
 export const useCreateSnippet = ({onSuccess}: {onSuccess: () => void}): UseMutationResult<Snippet, Error, CreateSnippet> => {
   const snippetOperations = useSnippetsOperations()
@@ -126,10 +150,11 @@ export const useGetFormatRules = () => {
 
 export const useModifyFormatRules = ({onSuccess}: {onSuccess: () => void}) => {
   const snippetOperations = useSnippetsOperations()
+  const reportError = useReportError()
 
   return useMutation<Rule[], Error, Rule[]>(
       rule => snippetOperations.modifyFormatRule(rule),
-      {onSuccess}
+      {onSuccess, onError: reportError}
   );
 }
 
@@ -143,18 +168,11 @@ export const useGetLintingRules = () => {
 
 export const useModifyLintingRules = ({onSuccess}: {onSuccess: () => void}) => {
   const snippetOperations = useSnippetsOperations()
+  const reportError = useReportError()
 
   return useMutation<Rule[], Error, Rule[]>(
       rule => snippetOperations.modifyLintingRule(rule),
-      {onSuccess}
-  );
-}
-
-export const useFormatSnippet = () => {
-  const snippetOperations = useSnippetsOperations()
-
-  return useMutation<string, Error, string>(
-      snippetContent => snippetOperations.formatSnippet(snippetContent)
+      {onSuccess, onError: reportError}
   );
 }
 

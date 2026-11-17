@@ -11,13 +11,19 @@ import {
 import {useGetFormatRules, useModifyFormatRules} from "../../utils/queries.tsx";
 import {queryClient} from "../../App.tsx";
 import {Rule} from "../../types/Rule.ts";
+import {useSnackbarContext} from "../../contexts/snackbarContext.tsx";
 
 const FormattingRulesList = () => {
   const [rules, setRules] = useState<Rule[] | undefined>([]);
+  const {createSnackbar} = useSnackbarContext()
 
   const {data, isLoading} = useGetFormatRules();
-  const {mutateAsync, isLoading: isLoadingMutate} = useModifyFormatRules({
-    onSuccess: () => queryClient.invalidateQueries('formatRules')
+  const {mutate, isLoading: isLoadingMutate} = useModifyFormatRules({
+    onSuccess: () => {
+      queryClient.invalidateQueries('formatRules')
+      queryClient.invalidateQueries('listSnippets')
+      createSnackbar('success', 'Formatting started. Your snippets will update in the background.')
+    }
   })
 
   useEffect(() => {
@@ -88,7 +94,7 @@ const FormattingRulesList = () => {
           )
         })}
       </List>
-      <Button disabled={isLoading} variant={"contained"} onClick={() => mutateAsync(rules ?? [])}>Save</Button>
+      <Button disabled={isLoading || isLoadingMutate} variant={"contained"} onClick={() => mutate(rules ?? [])}>Save</Button>
     </Card>
 
   );
