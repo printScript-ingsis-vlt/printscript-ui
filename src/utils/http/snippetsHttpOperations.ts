@@ -8,15 +8,23 @@ import {
   Snippet,
   SnippetContentVersion,
   SnippetListFilters,
+  LintIssue,
   UpdateSnippet,
   UpdateSnippetFromFile
 } from "../snippet.ts";
 
 // El listado no trae contenido; el detalle sí. La UI normaliza null a string vacío.
-export type SnippetDto = Omit<Snippet, "content"> & { content: string | null }
+export type SnippetDto = Omit<Snippet, "content" | "lintIssues"> & {
+  content: string | null
+  lintIssues?: LintIssue[] | null
+}
 type PaginatedSnippetsDto = Pagination & { snippets: SnippetDto[] }
 
-export const toSnippet = ({content, ...rest}: SnippetDto): Snippet => ({...rest, content: content ?? ""})
+export const toSnippet = ({content, lintIssues, ...rest}: SnippetDto): Snippet => ({
+  ...rest,
+  content: content ?? "",
+  lintIssues: lintIssues ?? undefined,
+})
 
 export class SnippetsHttpOperations {
   constructor(private readonly http: AxiosInstance) {}
