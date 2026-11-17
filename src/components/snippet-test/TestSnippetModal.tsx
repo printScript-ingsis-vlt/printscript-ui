@@ -90,7 +90,10 @@ export const TestSnippetModal = ({snippetId, open, onClose}: TestSnippetModalPro
                                   onSave={save} onRemove={remove} onRun={run}
                                   saving={saving} running={runTest.isLoading}/>
                     ))}
-                    <TabPanel index={testCases.length} value={value} onSave={save} saving={saving} running={false}/>
+                    {/* La key cambia cuando se crea un test: el formulario de "nuevo test" se remonta vacío
+                        en vez de conservar lo que se cargó en el anterior. */}
+                    <TabPanel key={`new-test-${testCases.length}`} index={testCases.length} value={value}
+                              onSave={save} saving={saving} running={false}/>
                 </>}
             </Box>
         </ModalWrapper>
