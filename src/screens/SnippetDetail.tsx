@@ -4,19 +4,18 @@ import {highlight, languages} from "prismjs";
 import "prismjs/components/prism-clike";
 import "prismjs/components/prism-javascript";
 import "prismjs/themes/prism-okaidia.css";
-import {Box, CircularProgress, IconButton, Tooltip, Typography} from "@mui/material";
+import {Alert, Box, CircularProgress, IconButton, Menu, MenuItem, Tooltip, Typography} from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 import {
   useUpdateSnippetById
 } from "../utils/queries.tsx";
-import {useFormatSnippet, useGetSnippetById, useShareSnippet} from "../utils/queries.tsx";
+import {useDownloadSnippet, useGetSnippetById, useShareSnippet} from "../utils/queries.tsx";
 import {Bòx} from "../components/snippet-table/SnippetBox.tsx";
 import {BugReport, Delete, Download, Save, Share} from "@mui/icons-material";
 import {ShareSnippetModal} from "../components/snippet-detail/ShareSnippetModal.tsx";
 import {TestSnippetModal} from "../components/snippet-test/TestSnippetModal.tsx";
-import {Snippet} from "../utils/snippet.ts";
+import {SnippetContentVersion} from "../utils/snippet.ts";
 import {SnippetExecution} from "./SnippetExecution.tsx";
-import ReadMoreIcon from '@mui/icons-material/ReadMore';
 import {queryClient} from "../App.tsx";
 import {DeleteConfirmationModal} from "../components/snippet-detail/DeleteConfirmationModal.tsx";
 import {ApiErrorAlert} from "../components/common/ApiErrorAlert.tsx";
@@ -24,29 +23,6 @@ import {ApiErrorAlert} from "../components/common/ApiErrorAlert.tsx";
 type SnippetDetailProps = {
   id: string;
   handleCloseModal: () => void;
-}
-
-const DownloadButton = ({snippet}: { snippet?: Snippet }) => {
-  if (!snippet) return null;
-  const file = new Blob([snippet.content], {type: 'text/plain'});
-
-  return (
-    <Tooltip title={"Download"}>
-      <IconButton sx={{
-        cursor: "pointer"
-      }}>
-        <a download={`${snippet.name}.${snippet.extension}`} target="_blank"
-           rel="noreferrer" href={URL.createObjectURL(file)} style={{
-          textDecoration: "none",
-          color: "inherit",
-          display: 'flex',
-          alignItems: 'center',
-        }}>
-          <Download/>
-        </a>
-      </IconButton>
-    </Tooltip>
-  )
 }
 
 export const SnippetDetail = (props: SnippetDetailProps) => {
@@ -57,10 +33,11 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
   const [shareModalOppened, setShareModalOppened] = useState(false)
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] = useState(false)
   const [testModalOpened, setTestModalOpened] = useState(false);
+  const [downloadAnchor, setDownloadAnchor] = useState<HTMLElement | null>(null)
 
   const {data: snippet, isLoading, isError, error: loadError, refetch} = useGetSnippetById(id);
   const {mutate: shareSnippet, isLoading: loadingShare} = useShareSnippet()
-  const {mutate: formatSnippet, isLoading: isFormatLoading, data: formatSnippetData} = useFormatSnippet()
+  const {mutate: downloadSnippet, isLoading: isDownloading} = useDownloadSnippet()
   const {mutate: updateSnippet, isLoading: isUpdateSnippetLoading, error: updateError} = useUpdateSnippetById({
     onSuccess: async () => {
       // El listado también cambia al guardar (por ejemplo vuelve a "pending").
@@ -75,15 +52,27 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
     }
   }, [snippet]);
 
-  useEffect(() => {
-    if (formatSnippetData) {
-      setCode(formatSnippetData)
-    }
-  }, [formatSnippetData])
-
-
   async function handleShareSnippet(userId: string) {
     shareSnippet({snippetId: id, userId})
+  }
+
+  const handleDownload = (version: SnippetContentVersion) => {
+    if (!snippet) return
+    setDownloadAnchor(null)
+    downloadSnippet(
+        {id: snippet.id, version},
+        {
+          onSuccess: content => {
+            const file = new Blob([content], {type: 'text/plain'})
+            const url = URL.createObjectURL(file)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `${snippet.name}.${snippet.extension}`
+            link.click()
+            URL.revokeObjectURL(url)
+          },
+        },
+    )
   }
 
   return (
@@ -156,6 +145,10 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
         <ShareSnippetModal loading={loadingShare || isLoading} open={shareModalOppened}
                            onClose={() => setShareModalOppened(false)}
                            onShare={handleShareSnippet}/>
+        <Menu anchorEl={downloadAnchor} open={Boolean(downloadAnchor)} onClose={() => setDownloadAnchor(null)}>
+          <MenuItem onClick={() => handleDownload('original')}>Download original</MenuItem>
+          <MenuItem onClick={() => handleDownload('formatted')}>Download formatted</MenuItem>
+        </Menu>
         <TestSnippetModal open={testModalOpened} onClose={() => setTestModalOpened(false)}/>
         <DeleteConfirmationModal open={deleteConfirmationModalOpen} onClose={() => setDeleteConfirmationModalOpen(false)} id={snippet?.id ?? ""} setCloseDetails={handleCloseModal} />
       </Box>

@@ -1,6 +1,13 @@
 import {SnippetOperations} from '../snippetOperations'
 import {FakeSnippetStore} from './fakeSnippetStore'
-import {CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet} from '../snippet'
+import {
+  CreateSnippet,
+  PaginatedSnippets,
+  Snippet,
+  SnippetContentVersion,
+  SnippetListFilters,
+  UpdateSnippet
+} from '../snippet'
 import autoBind from 'auto-bind'
 import {PaginatedUsers} from "../users.ts";
 import {TestCase} from "../../types/TestCase.ts";
@@ -29,7 +36,19 @@ export class FakeSnippetOperations implements SnippetOperations {
     })
   }
 
-  listSnippetDescriptors(page: number,pageSize: number): Promise<PaginatedSnippets> {
+  downloadSnippet(id: string, version: SnippetContentVersion): Promise<string> {
+    void version
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const snippet = this.fakeStore.getSnippetById(id)
+        if (snippet) resolve(snippet.content)
+        else reject(new Error(`Snippet with id ${id} does not exist`))
+      }, DELAY)
+    })
+  }
+
+  listSnippetDescriptors(page: number, pageSize: number, filters: SnippetListFilters): Promise<PaginatedSnippets> {
+    void filters
     const response: PaginatedSnippets = {
       page: page,
       page_size: pageSize,
@@ -71,12 +90,6 @@ export class FakeSnippetOperations implements SnippetOperations {
   getLintingRules(): Promise<Rule[]> {
     return new Promise(resolve => {
       setTimeout(() => resolve(this.fakeStore.getLintingRules()), DELAY)
-    })
-  }
-
-  formatSnippet(snippetContent: string): Promise<string> {
-    return new Promise(resolve => {
-      setTimeout(() => resolve(this.fakeStore.formatSnippet(snippetContent)), DELAY)
     })
   }
 
