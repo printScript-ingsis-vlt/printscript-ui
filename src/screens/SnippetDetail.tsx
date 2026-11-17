@@ -4,7 +4,7 @@ import {highlight, languages} from "prismjs";
 import "prismjs/components/prism-clike";
 import "prismjs/components/prism-javascript";
 import "prismjs/themes/prism-okaidia.css";
-import {Alert, Box, CircularProgress, IconButton, Menu, MenuItem, Tooltip, Typography} from "@mui/material";
+import {Box, CircularProgress, IconButton, Menu, MenuItem, Tooltip, Typography} from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 import {
   useUpdateSnippetById
@@ -103,10 +103,9 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
                   <BugReport/>
                 </IconButton>
               </Tooltip>
-              <DownloadButton snippet={snippet}/>
-              <Tooltip title={"Format"}>
-                <IconButton onClick={() => formatSnippet(code)} disabled={isFormatLoading}>
-                  <ReadMoreIcon />
+              <Tooltip title={"Download"}>
+                <IconButton onClick={event => setDownloadAnchor(event.currentTarget)} disabled={isDownloading || !snippet}>
+                  <Download/>
                 </IconButton>
               </Tooltip>
               <Tooltip title={"Save changes"}>
