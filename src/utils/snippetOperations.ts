@@ -1,14 +1,15 @@
 import {
   CreateSnippet,
+  CreateSnippetFromFile,
   PaginatedSnippets,
   Snippet,
   SnippetContentVersion,
   SnippetListFilters,
-  UpdateSnippet
+  UpdateSnippet,
+  UpdateSnippetFromFile
 } from './snippet'
 import {PaginatedUsers} from "./users.ts";
-import {TestCase} from "../types/TestCase.ts";
-import {TestCaseResult} from "./queries.tsx";
+import {TestCase, TestCaseDraft} from "../types/TestCase.ts";
 import {FileType} from "../types/FileType.ts";
 import {Rule} from "../types/Rule.ts";
 
@@ -17,11 +18,15 @@ export interface SnippetOperations {
 
   createSnippet(createSnippet: CreateSnippet): Promise<Snippet>
 
+  createSnippetFromFile(createSnippet: CreateSnippetFromFile): Promise<Snippet>
+
   getSnippetById(id: string): Promise<Snippet | undefined>
 
   downloadSnippet(id: string, version: SnippetContentVersion): Promise<string>
 
   updateSnippetById(id: string, updateSnippet: UpdateSnippet): Promise<Snippet>
+
+  updateSnippetFromFile(id: string, updateSnippet: UpdateSnippetFromFile): Promise<Snippet>
 
   getUserFriends(name?: string,page?: number,pageSize?: number): Promise<PaginatedUsers>
 
@@ -31,15 +36,15 @@ export interface SnippetOperations {
 
   getLintingRules(): Promise<Rule[]>
 
-  getTestCases(): Promise<TestCase[]>
+  getTestCases(snippetId: string): Promise<TestCase[]>
 
-  postTestCase(testCase: Partial<TestCase>): Promise<TestCase>
+  createTestCase(snippetId: string, testCase: TestCaseDraft): Promise<TestCase>
 
-  removeTestCase(id: string): Promise<string>
+  updateTestCase(snippetId: string, testId: string, testCase: TestCaseDraft): Promise<TestCase>
+
+  removeTestCase(snippetId: string, testId: string): Promise<string>
 
   deleteSnippet(id: string): Promise<string>
-
-  testSnippet(testCase: Partial<TestCase>): Promise<TestCaseResult>
 
   getFileTypes(): Promise<FileType[]>
 

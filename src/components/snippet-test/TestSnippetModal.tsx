@@ -1,58 +1,85 @@
-import {Box,  Divider, IconButton, Tab, Tabs, Typography} from "@mui/material";
+import {Box, Divider, IconButton, Tab, Tabs, Typography} from "@mui/material";
 import {ModalWrapper} from "../common/ModalWrapper.tsx";
-import {SyntheticEvent, useState} from "react";
+import {SyntheticEvent, useEffect, useState} from "react";
 import {AddRounded} from "@mui/icons-material";
-import {useGetTestCases, usePostTestCase, useRemoveTestCase} from "../../utils/queries.tsx";
+import {
+  useCreateTestCase,
+  useGetTestCases,
+  useRemoveTestCase,
+  useUpdateTestCase,
+} from "../../utils/queries.tsx";
 import {TabPanel} from "./TabPanel.tsx";
-import {queryClient} from "../../App.tsx";
+import {TestCaseDraft} from "../../types/TestCase.ts";
+import {ApiErrorAlert} from "../common/ApiErrorAlert.tsx";
 
 type TestSnippetModalProps = {
+    snippetId: string
     open: boolean
     onClose: () => void
 }
 
-export const TestSnippetModal = ({open, onClose}: TestSnippetModalProps) => {
+export const TestSnippetModal = ({snippetId, open, onClose}: TestSnippetModalProps) => {
     const [value, setValue] = useState(0);
+    const {data: testCases = [], isLoading, error: listError} = useGetTestCases(snippetId);
+    const createTest = useCreateTestCase(snippetId)
+    const updateTest = useUpdateTestCase(snippetId)
+    const removeTest = useRemoveTestCase(snippetId)
 
-    const {data: testCases} = useGetTestCases();
-    const {mutateAsync: postTestCase} = usePostTestCase();
-    const {mutateAsync: removeTestCase} = useRemoveTestCase({
-        onSuccess: () => queryClient.invalidateQueries('testCases')
-    });
+    useEffect(() => {
+        if (value > testCases.length) setValue(testCases.length)
+    }, [testCases.length, value])
 
-    const handleChange = (_: SyntheticEvent, newValue: number) => {
-        setValue(newValue);
-    };
+    const handleChange = (_: SyntheticEvent, newValue: number) => setValue(newValue)
+
+    const save = async (testCase: TestCaseDraft, testId?: string) => {
+        try {
+            if (testId) await updateTest.mutateAsync({testId, testCase})
+            else await createTest.mutateAsync(testCase)
+        } catch {
+            // El hook conserva el error para mostrarlo arriba del formulario.
+        }
+    }
+
+    const remove = async (testId: string) => {
+        try {
+            await removeTest.mutateAsync(testId)
+            setValue(0)
+        } catch {
+            // El hook conserva el error para mostrarlo arriba del formulario.
+        }
+    }
+
+    const error = listError ?? createTest.error ?? updateTest.error ?? removeTest.error
+    const saving = createTest.isLoading || updateTest.isLoading || removeTest.isLoading
 
     return (
         <ModalWrapper open={open} onClose={onClose}>
             <Typography variant={"h5"}>Test snippet</Typography>
             <Divider/>
+            {error && <Box mt={2}><ApiErrorAlert error={error}/></Box>}
             <Box mt={2} display="flex">
                 <Tabs
                     orientation="vertical"
                     variant="scrollable"
                     value={value}
                     onChange={handleChange}
-                    aria-label="Vertical tabs example"
+                    aria-label="Snippet tests"
                     sx={{borderRight: 1, borderColor: 'divider'}}
                 >
-                    {testCases?.map((testCase) => (
-                        <Tab label={testCase.name}/>
+                    {testCases.map((testCase, index) => (
+                        <Tab key={testCase.id} label={testCase.name} value={index}/>
                     ))}
-                    <IconButton disableRipple onClick={() => setValue((testCases?.length ?? 0) + 1)}>
+                    <IconButton disableRipple onClick={() => setValue(testCases.length)} aria-label="Add test">
                         <AddRounded />
                     </IconButton>
                 </Tabs>
-                {testCases?.map((testCase, index) => (
-                    <TabPanel index={index} value={value} test={testCase}
-                              setTestCase={(tc) => postTestCase(tc)}
-                              removeTestCase={(i) => removeTestCase(i)}
-                    />
-                ))}
-                <TabPanel index={(testCases?.length ?? 0) + 1} value={value}
-                          setTestCase={(tc) => postTestCase(tc)}
-                />
+                {isLoading ? <Typography sx={{px: 3}}>Loading tests…</Typography> : <>
+                    {testCases.map((testCase, index) => (
+                        <TabPanel key={testCase.id} index={index} value={value} test={testCase}
+                                  onSave={save} onRemove={remove} saving={saving}/>
+                    ))}
+                    <TabPanel index={testCases.length} value={value} onSave={save} saving={saving}/>
+                </>}
             </Box>
         </ModalWrapper>
     )

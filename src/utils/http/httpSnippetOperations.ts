@@ -3,23 +3,28 @@ import {BACKEND_URL} from "../constants.ts";
 import {PaginatedUsers} from "../users.ts";
 import {
   CreateSnippet,
+  CreateSnippetFromFile,
   PaginatedSnippets,
   Snippet,
   SnippetContentVersion,
   SnippetListFilters,
-  UpdateSnippet
+  UpdateSnippet,
+  UpdateSnippetFromFile
 } from "../snippet.ts";
 import {FileType} from "../../types/FileType.ts";
+import {TestCase, TestCaseDraft} from "../../types/TestCase.ts";
 import {Rule} from "../../types/Rule.ts";
 import {createAuthenticatedHttpClient} from "./authenticatedHttpClient.ts";
 import {RulesHttpOperations} from "./rulesHttpOperations.ts";
 import {SnippetsHttpOperations} from "./snippetsHttpOperations.ts";
 import {UsersHttpOperations} from "./usersHttpOperations.ts";
+import {TestsHttpOperations} from "./testsHttpOperations.ts";
 
 export class HttpSnippetOperations extends FakeSnippetOperations {
   private readonly snippets: SnippetsHttpOperations
   private readonly users: UsersHttpOperations
   private readonly rules: RulesHttpOperations
+  private readonly tests: TestsHttpOperations
 
   constructor(getToken: () => Promise<string>, baseUrl: string = BACKEND_URL) {
     super()
@@ -27,6 +32,7 @@ export class HttpSnippetOperations extends FakeSnippetOperations {
     this.snippets = new SnippetsHttpOperations(http)
     this.users = new UsersHttpOperations(http)
     this.rules = new RulesHttpOperations(http)
+    this.tests = new TestsHttpOperations(http)
   }
 
   override listSnippetDescriptors(page: number, pageSize: number, filters: SnippetListFilters): Promise<PaginatedSnippets> {
@@ -35,6 +41,10 @@ export class HttpSnippetOperations extends FakeSnippetOperations {
 
   override createSnippet(snippet: CreateSnippet): Promise<Snippet> {
     return this.snippets.create(snippet)
+  }
+
+  override createSnippetFromFile(snippet: CreateSnippetFromFile): Promise<Snippet> {
+    return this.snippets.createFromFile(snippet)
   }
 
   override getSnippetById(id: string): Promise<Snippet> {
@@ -47,6 +57,26 @@ export class HttpSnippetOperations extends FakeSnippetOperations {
 
   override updateSnippetById(id: string, snippet: UpdateSnippet): Promise<Snippet> {
     return this.snippets.update(id, snippet)
+  }
+
+  override updateSnippetFromFile(id: string, snippet: UpdateSnippetFromFile): Promise<Snippet> {
+    return this.snippets.updateFromFile(id, snippet)
+  }
+
+  override getTestCases(snippetId: string): Promise<TestCase[]> {
+    return this.tests.list(snippetId)
+  }
+
+  override createTestCase(snippetId: string, testCase: TestCaseDraft): Promise<TestCase> {
+    return this.tests.create(snippetId, testCase)
+  }
+
+  override updateTestCase(snippetId: string, testId: string, testCase: TestCaseDraft): Promise<TestCase> {
+    return this.tests.update(snippetId, testId, testCase)
+  }
+
+  override removeTestCase(snippetId: string, testId: string): Promise<string> {
+    return this.tests.remove(snippetId, testId)
   }
 
   override deleteSnippet(id: string): Promise<string> {
