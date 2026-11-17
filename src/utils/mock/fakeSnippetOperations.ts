@@ -2,16 +2,17 @@ import {SnippetOperations} from '../snippetOperations'
 import {FakeSnippetStore} from './fakeSnippetStore'
 import {
   CreateSnippet,
+  CreateSnippetFromFile,
   PaginatedSnippets,
   Snippet,
   SnippetContentVersion,
   SnippetListFilters,
-  UpdateSnippet
+  UpdateSnippet,
+  UpdateSnippetFromFile
 } from '../snippet'
 import autoBind from 'auto-bind'
 import {PaginatedUsers} from "../users.ts";
-import {TestCase} from "../../types/TestCase.ts";
-import {TestCaseResult} from "../queries.tsx";
+import {TestCase, TestCaseDraft, TestRun} from "../../types/TestCase.ts";
 import {FileType} from "../../types/FileType.ts";
 import {Rule} from "../../types/Rule.ts";
 
@@ -28,6 +29,10 @@ export class FakeSnippetOperations implements SnippetOperations {
     return new Promise(resolve => {
       setTimeout(() => resolve(this.fakeStore.createSnippet(createSnippet)), DELAY)
     })
+  }
+
+  async createSnippetFromFile(createSnippet: CreateSnippetFromFile): Promise<Snippet> {
+    return this.createSnippet({...createSnippet, content: await createSnippet.file.text()})
   }
 
   getSnippetById(id: string): Promise<Snippet | undefined> {
@@ -67,6 +72,10 @@ export class FakeSnippetOperations implements SnippetOperations {
     })
   }
 
+  async updateSnippetFromFile(id: string, updateSnippet: UpdateSnippetFromFile): Promise<Snippet> {
+    return this.updateSnippetById(id, {...updateSnippet, content: await updateSnippet.file.text()})
+  }
+
   getUserFriends(name: string = "", page: number = 1, pageSize: number = 10): Promise<PaginatedUsers> {
     return new Promise(resolve => {
       setTimeout(() => resolve(this.fakeStore.getUserFriends(name,page,pageSize)), DELAY)
@@ -93,27 +102,46 @@ export class FakeSnippetOperations implements SnippetOperations {
     })
   }
 
-  getTestCases(): Promise<TestCase[]> {
+  getTestCases(snippetId: string): Promise<TestCase[]> {
+    void snippetId
     return new Promise(resolve => {
       setTimeout(() => resolve(this.fakeStore.getTestCases()), DELAY)
     })
   }
 
-  postTestCase(testCase: TestCase): Promise<TestCase> {
+  createTestCase(snippetId: string, testCase: TestCaseDraft): Promise<TestCase> {
+    void snippetId
     return new Promise(resolve => {
       setTimeout(() => resolve(this.fakeStore.postTestCase(testCase)), DELAY)
     })
   }
 
-  removeTestCase(id: string): Promise<string> {
+  updateTestCase(snippetId: string, testId: string, testCase: TestCaseDraft): Promise<TestCase> {
+    void snippetId
+    return new Promise(resolve => {
+      setTimeout(() => resolve(this.fakeStore.postTestCase({...testCase, id: testId})), DELAY)
+    })
+  }
+
+  removeTestCase(snippetId: string, id: string): Promise<string> {
+    void snippetId
     return new Promise(resolve => {
       setTimeout(() => resolve(this.fakeStore.removeTestCase(id)), DELAY)
     })
   }
 
-  testSnippet(): Promise<TestCaseResult> {
+  runTestCase(snippetId: string, testId: string): Promise<TestRun> {
+    void snippetId
+    void testId
     return new Promise(resolve => {
-      setTimeout(() => resolve(this.fakeStore.testSnippet()), DELAY)
+      setTimeout(() => resolve({
+        passed: true,
+        total: 0,
+        passedCount: 0,
+        failedCount: 0,
+        lines: [],
+        errors: [],
+      }), DELAY)
     })
   }
 

@@ -1,17 +1,17 @@
-import {useEffect, useState} from "react";
+import {ChangeEvent, useEffect, useRef, useState} from "react";
 import Editor from "react-simple-code-editor";
 import {highlight, languages} from "prismjs";
 import "prismjs/components/prism-clike";
 import "prismjs/components/prism-javascript";
 import "prismjs/themes/prism-okaidia.css";
-import {Box, CircularProgress, IconButton, Menu, MenuItem, Tooltip, Typography} from "@mui/material";
+import {Box, CircularProgress, IconButton, Menu, MenuItem, TextField, Tooltip, Typography} from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 import {
   useUpdateSnippetById
 } from "../utils/queries.tsx";
-import {useDownloadSnippet, useGetSnippetById, useShareSnippet} from "../utils/queries.tsx";
+import {useDownloadSnippet, useGetSnippetById, useShareSnippet, useUpdateSnippetFromFile} from "../utils/queries.tsx";
 import {Bòx} from "../components/snippet-table/SnippetBox.tsx";
-import {BugReport, Delete, Download, Save, Share} from "@mui/icons-material";
+import {BugReport, Delete, Download, Save, Share, UploadFile} from "@mui/icons-material";
 import {ShareSnippetModal} from "../components/snippet-detail/ShareSnippetModal.tsx";
 import {TestSnippetModal} from "../components/snippet-test/TestSnippetModal.tsx";
 import {SnippetContentVersion} from "../utils/snippet.ts";
@@ -30,10 +30,15 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
   const [code, setCode] = useState(
       ""
   );
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [language, setLanguage] = useState("")
+  const [version, setVersion] = useState("")
   const [shareModalOppened, setShareModalOppened] = useState(false)
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] = useState(false)
   const [testModalOpened, setTestModalOpened] = useState(false);
   const [downloadAnchor, setDownloadAnchor] = useState<HTMLElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {data: snippet, isLoading, isError, error: loadError, refetch} = useGetSnippetById(id);
   const {mutate: shareSnippet, isLoading: loadingShare} = useShareSnippet()
@@ -45,12 +50,54 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
       await queryClient.invalidateQueries('listSnippets')
     }
   })
+  const {mutate: updateSnippetFromFile, isLoading: isUpdateFileLoading, error: updateFileError} = useUpdateSnippetFromFile({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries(['snippet', id])
+      await queryClient.invalidateQueries('listSnippets')
+    }
+  })
 
   useEffect(() => {
     if (snippet) {
       setCode(snippet.content);
+      setName(snippet.name)
+      setDescription(snippet.description)
+      setLanguage(snippet.language)
+      setVersion(snippet.version ?? "")
     }
   }, [snippet]);
+
+  const hasChanges = !!snippet && (
+      snippet.content !== code ||
+      snippet.name !== name ||
+      snippet.description !== description ||
+      snippet.language !== language ||
+      snippet.version !== version
+  )
+
+  const updateFromEditor = () => {
+    if (!snippet) return
+    updateSnippet({
+      id,
+      updateSnippet: {
+        name: name === snippet.name ? undefined : name,
+        description: description === snippet.description ? undefined : description,
+        language: language === snippet.language ? undefined : language,
+        version: version === snippet.version ? undefined : version,
+        content: code === snippet.content ? undefined : code,
+      },
+    })
+  }
+
+  const updateFromFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file || !snippet) return
+    updateSnippetFromFile({
+      id,
+      updateSnippet: {file, name, description, language, version: version || undefined},
+    })
+  }
 
   async function handleShareSnippet(userId: string) {
     shareSnippet({snippetId: id, userId})
@@ -108,8 +155,13 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
                   <Download/>
                 </IconButton>
               </Tooltip>
+              <Tooltip title={"Replace from file"}>
+                <IconButton onClick={() => fileInputRef.current?.click()} disabled={isUpdateFileLoading || !snippet}>
+                  {isUpdateFileLoading ? <CircularProgress size={20}/> : <UploadFile/>}
+                </IconButton>
+              </Tooltip>
               <Tooltip title={"Save changes"}>
-                <IconButton color={"primary"} onClick={() => updateSnippet({id: id, updateSnippet: {content: code}})} disabled={isUpdateSnippetLoading || !snippet || snippet.content === code} >
+                <IconButton color={"primary"} onClick={updateFromEditor} disabled={isUpdateSnippetLoading || !hasChanges} >
                   <Save />
                 </IconButton>
               </Tooltip>
@@ -119,7 +171,15 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
                 </IconButton>
               </Tooltip>
             </Box>
-            {updateError && <Box pb={2}><ApiErrorAlert error={updateError}/></Box>}
+            {(updateError || updateFileError) && <Box pb={2}><ApiErrorAlert error={updateError ?? updateFileError}/></Box>}
+            <Box display="flex" flexDirection="column" gap={2} pb={2}>
+              <TextField label="Name" value={name} onChange={event => setName(event.target.value)} size="small"/>
+              <TextField label="Description" value={description} onChange={event => setDescription(event.target.value)} size="small"/>
+              <Box display="flex" gap={2}>
+                <TextField label="Language" value={language} onChange={event => setLanguage(event.target.value)} size="small" fullWidth/>
+                <TextField label="Version" value={version} onChange={event => setVersion(event.target.value)} size="small" fullWidth/>
+              </Box>
+            </Box>
             <Box display={"flex"} gap={2}>
               <Bòx flex={1} height={"fit-content"} overflow={"none"} minHeight={"500px"} bgcolor={'black'} color={'white'} code={code}>
                 <Editor
@@ -137,7 +197,7 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
               </Bòx>
             </Box>
             <Box pt={1} flex={1} marginTop={2}>
-              <SnippetExecution snippetId={id} hasUnsavedChanges={!!snippet && snippet.content !== code}/>
+              <SnippetExecution snippetId={id} hasUnsavedChanges={hasChanges}/>
             </Box>
           </>
         }
@@ -148,7 +208,8 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
           <MenuItem onClick={() => handleDownload('original')}>Download original</MenuItem>
           <MenuItem onClick={() => handleDownload('formatted')}>Download formatted</MenuItem>
         </Menu>
-        <TestSnippetModal open={testModalOpened} onClose={() => setTestModalOpened(false)}/>
+        <input hidden type="file" ref={fileInputRef} onChange={updateFromFile}/>
+        <TestSnippetModal snippetId={id} open={testModalOpened} onClose={() => setTestModalOpened(false)}/>
         <DeleteConfirmationModal open={deleteConfirmationModalOpen} onClose={() => setDeleteConfirmationModalOpen(false)} id={snippet?.id ?? ""} setCloseDetails={handleCloseModal} />
       </Box>
   );
