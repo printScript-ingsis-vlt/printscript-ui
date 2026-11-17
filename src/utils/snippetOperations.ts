@@ -9,7 +9,7 @@ import {
   UpdateSnippetFromFile
 } from './snippet'
 import {PaginatedUsers} from "./users.ts";
-import {TestCase, TestCaseDraft} from "../types/TestCase.ts";
+import {TestCase, TestCaseDraft, TestRun} from "../types/TestCase.ts";
 import {FileType} from "../types/FileType.ts";
 import {Rule} from "../types/Rule.ts";
 
@@ -43,6 +43,8 @@ export interface SnippetOperations {
   updateTestCase(snippetId: string, testId: string, testCase: TestCaseDraft): Promise<TestCase>
 
   removeTestCase(snippetId: string, testId: string): Promise<string>
+
+  runTestCase(snippetId: string, testId: string): Promise<TestRun>
 
   deleteSnippet(id: string): Promise<string>
 

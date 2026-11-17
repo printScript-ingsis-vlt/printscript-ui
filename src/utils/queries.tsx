@@ -11,7 +11,7 @@ import {
 } from './snippet.ts';
 import {SnippetOperations} from "./snippetOperations.ts";
 import {PaginatedUsers} from "./users.ts";
-import {TestCase, TestCaseDraft} from "../types/TestCase.ts";
+import {TestCase, TestCaseDraft, TestRun} from "../types/TestCase.ts";
 import {FileType} from "../types/FileType.ts";
 import {Rule} from "../types/Rule.ts";
 import {useAuth0} from "@auth0/auth0-react";
@@ -162,6 +162,14 @@ export const useRemoveTestCase = (snippetId: string) => {
   return useMutation<string, Error, string>(
       testId => snippetOperations.removeTestCase(snippetId, testId),
       {onSuccess: () => queryClient.invalidateQueries(['testCases', snippetId])},
+  )
+}
+
+export const useRunTestCase = (snippetId: string) => {
+  const snippetOperations = useSnippetsOperations()
+
+  return useMutation<TestRun, Error, string>(
+      testId => snippetOperations.runTestCase(snippetId, testId),
   )
 }
 

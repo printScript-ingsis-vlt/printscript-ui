@@ -12,7 +12,7 @@ import {
 } from '../snippet'
 import autoBind from 'auto-bind'
 import {PaginatedUsers} from "../users.ts";
-import {TestCase, TestCaseDraft} from "../../types/TestCase.ts";
+import {TestCase, TestCaseDraft, TestRun} from "../../types/TestCase.ts";
 import {FileType} from "../../types/FileType.ts";
 import {Rule} from "../../types/Rule.ts";
 
@@ -127,6 +127,21 @@ export class FakeSnippetOperations implements SnippetOperations {
     void snippetId
     return new Promise(resolve => {
       setTimeout(() => resolve(this.fakeStore.removeTestCase(id)), DELAY)
+    })
+  }
+
+  runTestCase(snippetId: string, testId: string): Promise<TestRun> {
+    void snippetId
+    void testId
+    return new Promise(resolve => {
+      setTimeout(() => resolve({
+        passed: true,
+        total: 0,
+        passedCount: 0,
+        failedCount: 0,
+        lines: [],
+        errors: [],
+      }), DELAY)
     })
   }
 

@@ -1,7 +1,6 @@
 import {AxiosInstance} from "axios";
-import {TestCase, TestCaseDraft} from "../../types/TestCase.ts";
+import {TestCase, TestCaseDraft, TestRun} from "../../types/TestCase.ts";
 
-/** Cliente de los tests persistidos de un snippet; no comparte estado con el mock. */
 export class TestsHttpOperations {
   constructor(private readonly http: AxiosInstance) {}
 
@@ -23,6 +22,11 @@ export class TestsHttpOperations {
   async remove(snippetId: string, testId: string): Promise<string> {
     await this.http.delete(`${this.basePath(snippetId)}/${encodeURIComponent(testId)}`)
     return testId
+  }
+
+  async run(snippetId: string, testId: string): Promise<TestRun> {
+    const {data} = await this.http.post<TestRun>(`${this.basePath(snippetId)}/${encodeURIComponent(testId)}/run`)
+    return data
   }
 
   private basePath(snippetId: string): string {

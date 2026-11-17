@@ -12,7 +12,7 @@ import {
   UpdateSnippetFromFile
 } from "../snippet.ts";
 import {FileType} from "../../types/FileType.ts";
-import {TestCase, TestCaseDraft} from "../../types/TestCase.ts";
+import {TestCase, TestCaseDraft, TestRun} from "../../types/TestCase.ts";
 import {Rule} from "../../types/Rule.ts";
 import {createAuthenticatedHttpClient} from "./authenticatedHttpClient.ts";
 import {RulesHttpOperations} from "./rulesHttpOperations.ts";
@@ -77,6 +77,10 @@ export class HttpSnippetOperations extends FakeSnippetOperations {
 
   override removeTestCase(snippetId: string, testId: string): Promise<string> {
     return this.tests.remove(snippetId, testId)
+  }
+
+  override runTestCase(snippetId: string, testId: string): Promise<TestRun> {
+    return this.tests.run(snippetId, testId)
   }
 
   override deleteSnippet(id: string): Promise<string> {

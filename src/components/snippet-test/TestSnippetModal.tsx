@@ -6,10 +6,11 @@ import {
   useCreateTestCase,
   useGetTestCases,
   useRemoveTestCase,
+  useRunTestCase,
   useUpdateTestCase,
 } from "../../utils/queries.tsx";
 import {TabPanel} from "./TabPanel.tsx";
-import {TestCaseDraft} from "../../types/TestCase.ts";
+import {TestCaseDraft, TestRun} from "../../types/TestCase.ts";
 import {ApiErrorAlert} from "../common/ApiErrorAlert.tsx";
 
 type TestSnippetModalProps = {
@@ -24,6 +25,7 @@ export const TestSnippetModal = ({snippetId, open, onClose}: TestSnippetModalPro
     const createTest = useCreateTestCase(snippetId)
     const updateTest = useUpdateTestCase(snippetId)
     const removeTest = useRemoveTestCase(snippetId)
+    const runTest = useRunTestCase(snippetId)
 
     useEffect(() => {
         if (value > testCases.length) setValue(testCases.length)
@@ -49,7 +51,16 @@ export const TestSnippetModal = ({snippetId, open, onClose}: TestSnippetModalPro
         }
     }
 
-    const error = listError ?? createTest.error ?? updateTest.error ?? removeTest.error
+    const run = async (testId: string): Promise<TestRun | undefined> => {
+        try {
+            return await runTest.mutateAsync(testId)
+        } catch {
+            // El hook conserva el error para mostrarlo arriba del formulario.
+            return undefined
+        }
+    }
+
+    const error = listError ?? createTest.error ?? updateTest.error ?? removeTest.error ?? runTest.error
     const saving = createTest.isLoading || updateTest.isLoading || removeTest.isLoading
 
     return (
@@ -76,9 +87,10 @@ export const TestSnippetModal = ({snippetId, open, onClose}: TestSnippetModalPro
                 {isLoading ? <Typography sx={{px: 3}}>Loading tests…</Typography> : <>
                     {testCases.map((testCase, index) => (
                         <TabPanel key={testCase.id} index={index} value={value} test={testCase}
-                                  onSave={save} onRemove={remove} saving={saving}/>
+                                  onSave={save} onRemove={remove} onRun={run}
+                                  saving={saving} running={runTest.isLoading}/>
                     ))}
-                    <TabPanel index={testCases.length} value={value} onSave={save} saving={saving}/>
+                    <TabPanel index={testCases.length} value={value} onSave={save} saving={saving} running={false}/>
                 </>}
             </Box>
         </ModalWrapper>
