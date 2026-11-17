@@ -7,6 +7,26 @@ export type ComplianceEnum =
     'not-compliant' |
     'compliant'
 
+export type SnippetRelation = 'owned' | 'shared' | 'all'
+export type SnippetSortField = 'name' | 'language' | 'compliance'
+export type SnippetSortOrder = 'asc' | 'desc'
+export type SnippetContentVersion = 'original' | 'formatted'
+
+export type SnippetListFilters = {
+  name?: string;
+  language?: string;
+  compliance?: ComplianceEnum;
+  relation: SnippetRelation;
+  sort: SnippetSortField;
+  order: SnippetSortOrder;
+}
+
+export const defaultSnippetListFilters: SnippetListFilters = {
+  relation: 'all',
+  sort: 'name',
+  order: 'asc',
+}
+
 
 export type CreateSnippet = {
   name: string;

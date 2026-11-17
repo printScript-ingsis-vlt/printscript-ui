@@ -1,7 +1,14 @@
 import {FakeSnippetOperations} from "../mock/fakeSnippetOperations.ts";
 import {BACKEND_URL} from "../constants.ts";
 import {PaginatedUsers} from "../users.ts";
-import {CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet} from "../snippet.ts";
+import {
+  CreateSnippet,
+  PaginatedSnippets,
+  Snippet,
+  SnippetContentVersion,
+  SnippetListFilters,
+  UpdateSnippet
+} from "../snippet.ts";
 import {FileType} from "../../types/FileType.ts";
 import {Rule} from "../../types/Rule.ts";
 import {createAuthenticatedHttpClient} from "./authenticatedHttpClient.ts";
@@ -22,8 +29,8 @@ export class HttpSnippetOperations extends FakeSnippetOperations {
     this.rules = new RulesHttpOperations(http)
   }
 
-  override listSnippetDescriptors(page: number, pageSize: number, snippetName?: string): Promise<PaginatedSnippets> {
-    return this.snippets.list(page, pageSize, snippetName)
+  override listSnippetDescriptors(page: number, pageSize: number, filters: SnippetListFilters): Promise<PaginatedSnippets> {
+    return this.snippets.list(page, pageSize, filters)
   }
 
   override createSnippet(snippet: CreateSnippet): Promise<Snippet> {
@@ -32,6 +39,10 @@ export class HttpSnippetOperations extends FakeSnippetOperations {
 
   override getSnippetById(id: string): Promise<Snippet> {
     return this.snippets.getById(id)
+  }
+
+  override downloadSnippet(id: string, version: SnippetContentVersion): Promise<string> {
+    return this.snippets.download(id, version)
   }
 
   override updateSnippetById(id: string, snippet: UpdateSnippet): Promise<Snippet> {
