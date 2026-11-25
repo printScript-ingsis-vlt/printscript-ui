@@ -15,6 +15,9 @@ export const ModalWrapper = ({open, onClose,children}: { open: boolean, onClose:
           padding: '32px',
           borderRadius: '8px',
           width: '50%',
+          // Si el contenido es más alto que la pantalla, el modal scrollea en vez de cortarse arriba y abajo.
+          maxHeight: '90vh',
+          overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
           gap: '16px'

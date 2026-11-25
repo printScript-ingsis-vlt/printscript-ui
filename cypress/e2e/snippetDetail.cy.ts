@@ -1,50 +1,80 @@
-import {BACKEND_URL} from "../../src/utils/constants";
-import {FakeSnippetStore} from "../../src/utils/mock/fakeSnippetStore";
+import {api, cleanUpSnippets, createSnippet, login, openSnippet, uniqueName} from "../support/backend";
 
-describe('Add snippet tests', () => {
-  const fakeStore = new FakeSnippetStore()
+// Contra el backend real: cada test crea su snippet en snippet-service, lo abre desde el listado y lo borra al final.
+describe('Snippet detail tests', () => {
+  let name: string
+
   beforeEach(() => {
-    // cy.loginToAuth0(
-    //     AUTH0_USERNAME,
-    //     AUTH0_PASSWORD
-    // )
-    cy.intercept('GET', BACKEND_URL+"/snippets/*", {
-      statusCode: 201,
-      body: fakeStore.getSnippetById("1"),
-    }).as("getSnippetById")
-    cy.intercept('GET', BACKEND_URL+"/snippets").as("getSnippets")
+    login()
+    name = uniqueName('detalle')
+    createSnippet(name, 'println(1);')
+    openSnippet(name)
+  })
+  afterEach(() => cleanUpSnippets())
 
-    cy.visit("/")
+  it('Can share a snippet', () => {
+    cy.intercept({method: 'GET', pathname: api('/users')}).as('users')
+    cy.intercept({method: 'POST', pathname: api('/snippets/*/share')}).as('share')
 
-    // cy.wait("@getSnippets")
-    cy.wait(2000) // TODO comment this line and uncomment 19 to wait for the real data
-    cy.get('.MuiTableBody-root > :nth-child(1) > :nth-child(1)').click();
+    // Los usuarios salen de Auth0 (snippet-service consulta la Management API con el token M2M).
+    cy.get('[aria-label="Share"]').click()
+    cy.get('input[type="text"]').last().type('a')
+    cy.wait('@users').its('response.statusCode').should('eq', 200)
+    cy.get('li[role="option"]', {timeout: 10000}).first().click()
+    cy.contains('button', /^Share$/).click()
+
+    // permissions guarda el permiso de lectura para ese usuario.
+    cy.wait('@share').its('response.statusCode').should('be.oneOf', [200, 201, 204])
   })
 
-  it('Can share a snippet ', () => {
-    cy.get('[aria-label="Share"]').click();
-    cy.get('#\\:rl\\:').click();
-    cy.get('#\\:rl\\:-option-0').click();
-    cy.get('.css-1yuhvjn > .MuiBox-root > .MuiButton-contained').click();
-    cy.wait(2000)
+  it('Can run snippets', () => {
+    // La ejecución va por WebSocket a print-script-engine, que lee el código guardado y devuelve la salida.
+    cy.contains('Press Run to execute the saved snippet.')
+    cy.contains('button', 'Run').click()
+
+    cy.get('[data-testid="execution-console"]', {timeout: 20000}).should('contain', '1')
+    cy.contains('.MuiChip-label', 'Finished', {timeout: 20000})
   })
 
-  it('Can run snippets', function() {
-    cy.get('[data-testid="PlayArrowIcon"]').click();
-    cy.get('.css-1hpabnv > .MuiBox-root > div > .npm__react-simple-code-editor__textarea').should("have.length.greaterThan",0);
-  });
+  it('Can download the formatted version', () => {
+    cy.intercept({method: 'GET', pathname: api('/snippets/*/download')}).as('download')
 
-  it('Can format snippets', function() {
-    cy.get('[data-testid="ReadMoreIcon"] > path').click();
-  });
+    cy.get('[aria-label="Download"]').click()
+    cy.contains('li', 'Download formatted').click()
 
-  it('Can save snippets', function() {
-    cy.get('.css-10egq61 > .MuiBox-root > div > .npm__react-simple-code-editor__textarea').click();
-    cy.get('.css-10egq61 > .MuiBox-root > div > .npm__react-simple-code-editor__textarea').type("Some new line");
-    cy.get('[data-testid="SaveIcon"] > path').click();
-  });
+    cy.wait('@download').then(({request, response}) => {
+      expect(request.query).to.deep.include({version: 'formatted'})
+      expect(response?.statusCode).to.eq(200)
+      expect(response?.body).to.contain('println(1);')
+    })
+  })
 
-  it('Can delete snippets', function() {
-    cy.get('[data-testid="DeleteIcon"] > path').click();
-  });
+  it('Can save snippets', () => {
+    cy.intercept({method: 'PUT', pathname: api('/snippets/*')}).as('update')
+
+    cy.get('.MuiDrawer-root textarea').type(' println(2);')
+    cy.get('[aria-label="Save changes"]').click()
+
+    cy.wait('@update').then(({request, response}) => {
+      expect(request.body).to.deep.equal({content: 'println(1); println(2);'})
+      expect(response?.statusCode).to.eq(200)
+    })
+    // Al volver a abrirlo, el contenido guardado es el nuevo.
+    cy.get('[data-testid="CloseIcon"]').click()
+    openSnippet(name)
+    cy.get('.MuiDrawer-root textarea').should('have.value', 'println(1); println(2);')
+  })
+
+  it('Can delete snippets', () => {
+    cy.intercept({method: 'DELETE', pathname: api('/snippets/*')}).as('delete')
+
+    cy.get('[aria-label="Delete"]').click()
+    cy.contains('Are you sure you want to delete this snippet?').parent().within(() => {
+      cy.contains('button', 'Delete').click()
+    })
+
+    cy.wait('@delete').its('response.statusCode').should('eq', 204)
+    cy.get('input[aria-label="search"]').clear().type(name)
+    cy.contains('[data-testid="snippet-row"]', name).should('not.exist')
+  })
 })
