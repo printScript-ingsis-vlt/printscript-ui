@@ -1,49 +1,62 @@
-import {BACKEND_URL} from "../../src/utils/constants";
+import {api, cleanUpSnippets, login, trackCreated, uniqueName} from "../support/backend";
 
+// Contra el backend real: los snippets se crean de verdad en snippet-service y se borran al terminar cada test.
 describe('Add snippet tests', () => {
   beforeEach(() => {
-    // cy.loginToAuth0(
-    //     AUTH0_USERNAME,
-    //     AUTH0_PASSWORD
-    // )
+    login()
+    cy.intercept({method: 'POST', pathname: api('/snippets')}).as('create')
   })
-  it('Can add snippets manually', () => {
-    cy.visit("/")
-    cy.intercept('POST', BACKEND_URL+"/snippets", (req) => {
-      req.reply((res) => {
-        expect(res.body).to.include.keys("id","name","content","language")
-        expect(res.statusCode).to.eq(200);
-      });
-    }).as('postRequest');
+  afterEach(() => cleanUpSnippets())
 
-    /* ==== Generated with Cypress Studio ==== */
-    cy.get('.css-9jay18 > .MuiButton-root').click();
-    cy.get('.MuiList-root > [tabindex="0"]').click();
-    cy.get('#name').type('Some snippet name');
+  it('Can add snippets manually', () => {
+    const name = uniqueName('manual')
+
+    cy.contains('button', 'Add Snippet').click()
+    cy.contains('li', 'Create snippet').click()
+    cy.get('#name').type(name)
     cy.get('#demo-simple-select').click()
     cy.get('[data-testid="menu-option-printscript"]').click()
+    cy.get('[data-testid="add-snippet-code-editor"]').type('println(1);')
+    cy.contains('button', 'Save Snippet').click()
 
-    cy.get('[data-testid="add-snippet-code-editor"]').click();
-    cy.get('[data-testid="add-snippet-code-editor"]').type(`const snippet: String = "some snippet" \n print(snippet)`);
-    cy.get('[data-testid="SaveIcon"]').click();
-
-    cy.wait('@postRequest').its('response.statusCode').should('eq', 200);
+    cy.wait('@create').then(({request, response}) => {
+      expect(response?.statusCode).to.eq(201)
+      expect(request.body).to.include({name, language: 'printscript', content: 'println(1);'})
+      trackCreated(response?.body.id)
+    })
+    // Al guardar, el modal se cierra y el snippet aparece en el listado.
+    cy.get('[data-testid="add-snippet-code-editor"]').should('not.exist')
+    cy.get('input[aria-label="search"]').type(name)
+    cy.contains('[data-testid="snippet-row"]', name, {timeout: 15000})
   })
 
   it('Can add snippets via file', () => {
-    cy.visit("/")
-    cy.intercept('POST', BACKEND_URL+"/snippets", (req) => {
-      req.reply((res) => {
-        expect(res.body).to.include.keys("id","name","content","language")
-        expect(res.statusCode).to.eq(200);
-      });
-    }).as('postRequest');
+    // Elegir el archivo abre el modal con el nombre y el código del archivo ya cargados.
+    cy.get('[data-testid="upload-file-input"]').selectFile("cypress/fixtures/valid_snippet.ps", {force: true})
+    cy.get('#name').should('have.value', 'valid_snippet')
+    // El nombre se cambia para que sea único en la base compartida de dev.
+    const name = uniqueName('archivo')
+    cy.get('#name').clear().type(name)
+    cy.contains('button', 'Save Snippet').click()
 
-    /* ==== Generated with Cypress Studio ==== */
-    cy.get('[data-testid="upload-file-input"').selectFile("cypress/fixtures/example_ps.ps", {force: true})
+    // Desde archivo se manda como multipart (el archivo va tal cual).
+    cy.wait('@create').then(({request, response}) => {
+      expect(response?.statusCode).to.eq(201)
+      expect(request.headers['content-type']).to.include('multipart/form-data')
+      trackCreated(response?.body.id)
+    })
+  })
 
-    cy.get('[data-testid="SaveIcon"]').click();
+  it('Keeps the modal open and shows the error when the snippet is invalid', () => {
+    cy.contains('button', 'Add Snippet').click()
+    cy.contains('li', 'Create snippet').click()
+    cy.get('#name').type(uniqueName('invalido'))
+    cy.get('[data-testid="add-snippet-code-editor"]').type('let @@')
+    cy.contains('button', 'Save Snippet').click()
 
-    cy.wait('@postRequest').its('response.statusCode').should('eq', 200);
+    // snippet-service valida con el parser de PrintScript y rechaza el código: no se guarda nada.
+    cy.wait('@create').its('response.statusCode').should('eq', 400)
+    cy.get('[data-testid="api-error"]').should('be.visible')
+    cy.get('[data-testid="add-snippet-code-editor"]').should('exist')
   })
 })

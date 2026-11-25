@@ -1,37 +1,32 @@
-import {AUTH0_USERNAME,AUTH0_PASSWORD} from "../../src/utils/constants";
+import {testUser} from "../support/backend";
+
+// Los dos primeros entran sin sesión: no hace falta usuario, solo ver adónde manda la app.
+// El dominio sale de VITE_AUTH0_DOMAIN en .env (cypress.config.ts pasa el entorno a Cypress.env).
+const auth0Origin = () => `https://${Cypress.env('VITE_AUTH0_DOMAIN')}`
 
 describe('Protected routes test', () => {
-  it('should redirect to login when accessing a protected route unauthenticated', () => {
-    // Visit the protected route
-    cy.visit('/');
+  it('should redirect to the Auth0 login when accessing a protected route unauthenticated', () => {
+    cy.visit('/')
 
-    cy.wait(1000)
-
-    // Check if the URL is redirected to the login page
-    cy.url().should('include', '/login');
+    cy.origin(auth0Origin(), () => {
+      cy.location('pathname', {timeout: 15000}).should('include', 'login')
+    })
   });
 
   it('should display login content', () => {
-    // Visit the login page
-    cy.visit('/login');
+    cy.visit('/')
 
-    // Look for text that is likely to appear on a login page
-    cy.contains('Log in').should('exist');
-    cy.contains('Password').should('exist'); // Adjust the text based on actual content
+    cy.origin(auth0Origin(), () => {
+      cy.get('input[name="username"], input#username', {timeout: 15000}).should('be.visible')
+    })
   });
 
   it('should not redirect to login when the user is already authenticated', () => {
-    cy.loginToAuth0(
-        AUTH0_USERNAME,
-        AUTH0_PASSWORD
-    )
+    const {username, password} = testUser()
+    cy.loginToAuth0(username, password)
 
-    cy.visit('/');
-
-    cy.wait(1000)
-
-    // Check if the URL is redirected to the login page
-    cy.url().should('not.include', '/login');
+    cy.location('origin').should('eq', new URL(Cypress.config('baseUrl') as string).origin)
+    cy.location('pathname').should('not.include', 'login')
+    cy.contains('.MuiTypography-h6', 'Printscript')
   });
-
 })

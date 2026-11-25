@@ -55,6 +55,24 @@ To start cypress, make sure that the UI is running and enter:
 npm run cypress
 ```
 
+Los specs de `cypress/e2e` usan el login **real** de Auth0 y el backend **real**: crean, editan, comparten, ejecutan y
+borran snippets en snippet-service, y cada test borra lo que creó. Necesitan en el `.env` (que no se commitea):
+
+- `AUTH0_USERNAME` y `AUTH0_PASSWORD`: un usuario de prueba de Auth0 de tipo usuario y contraseña.
+- `VITE_AUTH0_DOMAIN`: el dominio de Auth0.
+- `FRONTEND_URL`: la UI desplegada contra la que se corre (por ejemplo la de dev). Su origen tiene que estar en
+  "Allowed Callback URLs" de la aplicación de Auth0.
+
+Para correrlos sin ventana:
+
+```bash
+npx cypress run
+```
+
+El login se hace una vez y se reutiliza (`cy.session`); `login.cy.ts` completa siempre el formulario de Auth0.
+El único caso con una falla simulada es el del listado que devuelve 502 (`snippets.cy.ts`), porque no se puede tirar
+un servicio en cada corrida.
+
 ## Start working
 
 1. Fork the Project
